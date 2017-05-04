@@ -1,0 +1,80 @@
+module PaintJobRobot3
+
+/**
+ * Robot with arms that color pieces. Change of color has to be supported (dimensions of arrays are number of robot arms).
+ * 
+ * This example is modified with a reduction from 
+ *  - disjunctive implication with
+ *  -- minimum over assumptions 
+ *  -- average over guarantees
+ * 
+ * This specification expresses value 1 (2 out of 2 assumptions is satisfied, 4 out of 4 guarantees are satisfied).
+ */
+ 
+
+define
+  c1 := tool[0] < 128 & tool[1] < 128;
+  c2 := tool[0] < 128 & tool[1] >= 128;
+  c3 := tool[0] >= 128 & tool[1] < 128;
+  c4 := tool[0] >= 128 & tool[1] >= 128;
+  
+// flag whether change of dynamic color is allowed
+env boolean[2] chg;
+
+sys Int(0..255)[2] tool;
+
+//asm
+//  GF chg[0];
+//asm
+//  GF chg[1];  
+
+gar
+  G !chg[0] -> next(tool[0])=tool[0];
+gar
+  G !chg[1] -> next(tool[1])=tool[1];  
+
+//gar
+//  GF c1;
+//gar
+//  GF c2;
+//gar
+//  GF c3;
+  
+  
+// f spec: sum of satisfied GF values is larger than 2/3  
+
+aux Int(0..1)[4] satGFGar;
+
+gar iniSatGF:
+  satGFGar[0]=0 & satGFGar[1]=0 & satGFGar[2]=0 & satGFGar[3]=0;
+
+gar settingSatGF:
+  G (
+    (((satGFGar[0]=1 | c1) & !thresholdGar) <-> next(satGFGar[0]=1)) &
+    (((satGFGar[1]=1 | c2) & !thresholdGar) <-> next(satGFGar[1]=1)) &
+    (((satGFGar[2]=1 | c3) & !thresholdGar) <-> next(satGFGar[2]=1)) &
+    (((satGFGar[3]=1 | c4) & !thresholdGar) <-> next(satGFGar[3]=1))
+  );
+
+// assumption part
+aux Int(0..1)[2] satGFAsm;
+
+gar
+  satGFAsm[0]=0 & satGFAsm[1]=0;
+
+gar settingSatGFAsm:
+  G (
+    (((satGFAsm[0]=1 | chg[0]) & !thresholdAsm) <-> next(satGFAsm[0]=1)) & 
+    (((satGFAsm[1]=1 | chg[1]) & !thresholdAsm) <-> next(satGFAsm[1]=1))
+  );
+
+// new fairness constraints:
+asm
+  GF thresholdAsm;
+gar
+  GF thresholdGar;
+  
+define
+  thresholdAsm := satGFAsm[0] + satGFAsm[1] >= 2; // 2 means "minimum" semantics because all have to be 1
+define
+  thresholdGar := satGFGar[0] + satGFGar[1] + satGFGar[2] + satGFGar[3] >= 4; // can satisfy all guarantees

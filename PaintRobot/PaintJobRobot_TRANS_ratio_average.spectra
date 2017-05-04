@@ -1,0 +1,117 @@
+module PaintJobRobot3
+
+/**
+ * Robot with arms that color pieces. Change of color has to be supported (dimensions of arrays are number of robot arms).
+ * 
+ * This example is modified with a reduction from 
+ *  - ratio objective with
+ *  -- average over assumptions 
+ *  -- average over guarantees
+ * 
+ * NOTE The reduction from the ratio objective requires to reverse the players. A GR(1) counter-strategy is the winning strategy of the system player.   
+ * 
+ * This specification expresses value 3/2 (if two assumptions are satisfied, 3 guarantees will be satisfied).
+ * 
+ * To change the ration modify parameters p and q on the bottom of the file.
+ * 
+ * 
+ * The auxiliary variables a^s_{r,i} are encoded in arrays aS[r][i]. Note that the case r=0 is not necessary to encode and thus index 0 of the array refers to r=1.  
+ * 
+ */
+ 
+
+define
+  c1 := tool[0] < 128 & tool[1] < 128;
+  c2 := tool[0] < 128 & tool[1] >= 128;
+  c3 := tool[0] >= 128 & tool[1] < 128;
+  c4 := tool[0] >= 128 & tool[1] >= 128;
+  
+// flag whether change of dynamic color is allowed
+sys boolean[2] chg;
+
+gar
+  G !(chg[0] & chg[1]);
+
+env Int(0..255)[2] tool;
+
+asm
+  G !chg[0] -> next(tool[0])=tool[0];
+asm
+  G !chg[1] -> next(tool[1])=tool[1];  
+
+// values records for system guarantees for each r=1, 2
+aux Int(0..1)[2][4] aS;
+
+define
+  doResetASR1 :=aS[0][0]=0 & aS[0][1]=0 & aS[0][2]=0 & aS[0][3]=0;
+  doResetASR2 :=aS[1][0]=0 & aS[1][1]=0 & aS[1][2]=0 & aS[1][3]=0;
+  sumASR1 := aS[0][0] +  aS[0][1] + aS[0][2] + aS[0][3];
+  sumASR2 := aS[1][0] +  aS[1][1] + aS[1][2] + aS[1][3];
+
+gar
+  doResetASR1 & doResetASR2;
+
+env boolean giveUp;
+
+define
+  geq1T := sumASR1*q >= p;
+  geq2T := sumASR2*q >= 2*p;
+
+gar settingSatGF1:
+  G (
+    (((aS[0][0]=1 | c1) & !geq1T) -> next(aS[0][0]=1)) &
+    (((aS[0][1]=1 | c2) & !geq1T) -> next(aS[0][1]=1)) &
+    (((aS[0][2]=1 | c3) & !geq1T) -> next(aS[0][2]=1)) &
+    (((aS[0][3]=1 | c4) & !geq1T) -> next(aS[0][3]=1)) &
+    (geq1T -> next(aS[0][0]=0)) &
+    (geq1T -> next(aS[0][1]=0)) &
+    (geq1T -> next(aS[0][2]=0)) &
+    (geq1T -> next(aS[0][3]=0))
+  );
+    
+gar settingSatGF2:
+  G (
+    (((aS[1][0]=1 | c1) & !geq2T) -> next(aS[1][0]=1)) &
+    (((aS[1][1]=1 | c2) & !geq2T) -> next(aS[1][1]=1)) &
+    (((aS[1][2]=1 | c3) & !geq2T) -> next(aS[1][2]=1)) &
+    (((aS[1][3]=1 | c4) & !geq2T) -> next(aS[1][3]=1)) &
+    (geq2T -> next(aS[1][0]=0)) &
+    (geq2T -> next(aS[1][1]=0)) &
+    (geq2T -> next(aS[1][2]=0)) &
+    (geq2T -> next(aS[1][3]=0))
+  );  
+  
+// assumption part
+aux Int(0..1)[2][2] aE;
+
+define
+  doResetAER1 := aE[0][0]=0 & aE[0][1]=0;
+  doResetAER2 := aE[1][0]=0 & aE[1][1]=0;
+gar  
+  doResetAER1 & doResetAER2;
+
+
+define
+  lessR1 := (aE[0][0] + aE[0][1] < 1);
+  lessR2 := (aE[1][0] + aE[1][1] < 2);
+
+gar settingSatGFAsm:
+  G (
+    (((aE[0][0]=1 | chg[0]) & !(geq1T | giveUp)) <-> next(aE[0][0]=1)) & 
+    (((aE[0][1]=1 | chg[1]) & !(geq1T | giveUp)) <-> next(aE[0][1]=1)) & 
+    
+    (((aE[1][0]=1 | chg[0]) & !(geq2T | giveUp)) <-> next(aE[1][0]=1)) & 
+    (((aE[1][1]=1 | chg[1]) & !(geq2T | giveUp)) <-> next(aE[1][1]=1))
+  );
+
+asm
+  GF lessR1 | geq1T;
+asm
+  GF lessR2 | geq2T;
+
+gar
+  GF giveUp;
+
+define // threshold is p/q
+  p := 3;
+  q := 2;

@@ -1,0 +1,180 @@
+module PaintJobRobot3
+
+/**
+ * Robot with arms that color pieces. Change of color has to be supported (dimensions of arrays are number of robot arms).
+ * 
+ * This example is modified with a reduction from 
+ *  - ratio objective with
+ *  -- average over assumptions 
+ *  -- average over guarantees
+ * 
+ * NOTE The reduction from the ratio objective requires to reverse the players. A GR(1) counter-strategy is the winning strategy of the system player.   
+ * 
+ * This specification expresses value 3/2 (if two assumptions are satisfied, 3 guarantees will be satisfied).
+ * 
+ * To change the ration modify parameters p and q on the bottom of the file.
+ * 
+ */
+ 
+
+define
+  c1 := tool[0] < 128 & tool[1] < 128;
+  c2 := tool[0] < 128 & tool[1] >= 128;
+  c3 := tool[0] >= 128 & tool[1] < 128;
+  c4 := tool[0] >= 128 & tool[1] >= 128;
+  
+// flag whether change of dynamic color is allowed
+sys boolean[2] chg;
+
+gar
+  G !(chg[0] & chg[1]);
+
+env Int(0..255)[2] tool;
+
+//asm
+//  GF chg[0];
+//asm
+//  GF chg[1];  
+
+asm
+  G !chg[0] -> next(tool[0])=tool[0];
+asm
+  G !chg[1] -> next(tool[1])=tool[1];  
+
+//gar
+//  GF c1;
+//gar
+//  GF c2;
+//gar
+//  GF c3;
+  
+  
+// f spec: sum of satisfied GF values is larger than 2/3  
+
+// values reached
+sys Int(0..1)[4] satGFGar1;
+sys Int(0..1)[4] satGFGar2;
+sys Int(0..1)[4] satGFGar3;
+sys Int(0..1)[4] satGFGar4;
+
+define
+  doResetGar1 :=satGFGar1[0]=0 & satGFGar1[1]=0 & satGFGar1[2]=0 & satGFGar1[3]=0;
+  doResetGar2 :=satGFGar2[0]=0 & satGFGar2[1]=0 & satGFGar2[2]=0 & satGFGar2[3]=0;
+  doResetGar3 :=satGFGar3[0]=0 & satGFGar3[1]=0 & satGFGar3[2]=0 & satGFGar3[3]=0;
+  doResetGar4 :=satGFGar4[0]=0 & satGFGar4[1]=0 & satGFGar4[2]=0 & satGFGar4[3]=0;
+  sumGar1 := satGFGar1[0] +  satGFGar1[1] + satGFGar1[2] + satGFGar1[3];
+  sumGar2 := satGFGar2[0] +  satGFGar2[1] + satGFGar2[2] + satGFGar2[3];
+  sumGar3 := satGFGar3[0] +  satGFGar3[1] + satGFGar3[2] + satGFGar3[3];
+  sumGar4 := satGFGar4[0] +  satGFGar4[1] + satGFGar4[2] + satGFGar4[3];
+
+gar
+  doResetGar1 & doResetGar2 & doResetGar3 & doResetGar4;
+
+env boolean giveUp;
+
+define
+  resetRecord1 := sumGar1 >= 1;
+  resetRecord2 := sumGar2 >= 2;
+  resetRecord3 := sumGar3 >= 3;
+  resetRecord4 := sumGar4 >= 4;
+
+gar settingSatGF1:
+  G (
+    (((satGFGar1[0]=1 | c1) & !resetRecord1) -> next(satGFGar1[0]=1)) &
+    (((satGFGar1[1]=1 | c2) & !resetRecord1) -> next(satGFGar1[1]=1)) &
+    (((satGFGar1[2]=1 | c3) & !resetRecord1) -> next(satGFGar1[2]=1)) &
+    (((satGFGar1[3]=1 | c4) & !resetRecord1) -> next(satGFGar1[3]=1)) &
+    (resetRecord1 -> (next(satGFGar1[0]=1) <-> c1)) &
+    (resetRecord1 -> (next(satGFGar1[1]=1) <-> c2)) &
+    (resetRecord1 -> (next(satGFGar1[2]=1) <-> c3)) &
+    (resetRecord1 -> (next(satGFGar1[3]=1) <-> c4))
+  );
+gar settingSatGF2:
+  G (
+    (((satGFGar2[0]=1 | c1) & !resetRecord2) -> next(satGFGar2[0]=1)) &
+    (((satGFGar2[1]=1 | c2) & !resetRecord2) -> next(satGFGar2[1]=1)) &
+    (((satGFGar2[2]=1 | c3) & !resetRecord2) -> next(satGFGar2[2]=1)) &
+    (((satGFGar2[3]=1 | c4) & !resetRecord2) -> next(satGFGar2[3]=1)) &
+    (resetRecord2 -> (next(satGFGar2[0]=1) <-> c1)) &
+    (resetRecord2 -> (next(satGFGar2[1]=1) <-> c2)) &
+    (resetRecord2 -> (next(satGFGar2[2]=1) <-> c3)) &
+    (resetRecord2 -> (next(satGFGar2[3]=1) <-> c4))
+  );
+gar settingSatGF3:
+  G (
+    (((satGFGar3[0]=1 | c1) & !resetRecord3) -> next(satGFGar3[0]=1)) &
+    (((satGFGar3[1]=1 | c2) & !resetRecord3) -> next(satGFGar3[1]=1)) &
+    (((satGFGar3[2]=1 | c3) & !resetRecord3) -> next(satGFGar3[2]=1)) &
+    (((satGFGar3[3]=1 | c4) & !resetRecord3) -> next(satGFGar3[3]=1)) &
+    (resetRecord3 -> (next(satGFGar3[0]=1) <-> c1)) &
+    (resetRecord3 -> (next(satGFGar3[1]=1) <-> c2)) &
+    (resetRecord3 -> (next(satGFGar3[2]=1) <-> c3)) &
+    (resetRecord3 -> (next(satGFGar3[3]=1) <-> c4))
+  );
+gar settingSatGF4:
+  G (
+    (((satGFGar4[0]=1 | c1) & !resetRecord4) -> next(satGFGar4[0]=1)) &
+    (((satGFGar4[1]=1 | c2) & !resetRecord4) -> next(satGFGar4[1]=1)) &
+    (((satGFGar4[2]=1 | c3) & !resetRecord4) -> next(satGFGar4[2]=1)) &
+    (((satGFGar4[3]=1 | c4) & !resetRecord4) -> next(satGFGar4[3]=1)) &
+    (resetRecord4 -> (next(satGFGar4[0]=1) <-> c1)) &
+    (resetRecord4 -> (next(satGFGar4[1]=1) <-> c2)) &
+    (resetRecord4 -> (next(satGFGar4[2]=1) <-> c3)) &
+    (resetRecord4 -> (next(satGFGar4[3]=1) <-> c4))
+  );  
+  
+// assumption part
+sys Int(0..1)[2] satGFAsm1;
+sys Int(0..1)[2] satGFAsm2;
+
+define
+  doResetAsm1 := satGFAsm1[0]=0 & satGFAsm1[1]=0;
+  doResetAsm2 := satGFAsm2[0]=0 & satGFAsm2[1]=0;
+gar  
+  doResetAsm1 & doResetAsm2;
+
+
+define
+  open1 := (satGFAsm1[0] + satGFAsm1[1] >= 1);
+  open2 := (satGFAsm2[0] + satGFAsm2[1] >= 2);
+  //open2 := FALSE;
+
+sys Int(0..4) closeVal;
+
+gar
+  G (((resetRecord1 & !resetRecord2 & !resetRecord3 & !resetRecord4) <-> closeVal=1) & 
+     ((resetRecord2 & !resetRecord3 & !resetRecord4) <-> closeVal=2) &
+     ((resetRecord3 & !resetRecord4) <-> closeVal=3) &
+     ((resetRecord4) <-> closeVal=4)
+  );
+  
+define
+  shouldResetAsm1 := close1 | giveUp;
+  shouldResetAsm2 := close2 | giveUp;
+  
+gar settingSatGFAsm: // implicit reset of satGFAsmX[X] to 0
+  G (
+    (((satGFAsm1[0]=1 | chg[0]) & !shouldResetAsm1) <-> next(satGFAsm1[0]=1)) & 
+    (((satGFAsm1[1]=1 | chg[1]) & !shouldResetAsm1) <-> next(satGFAsm1[1]=1)) & 
+    
+    (((satGFAsm2[0]=1 | chg[0]) & !shouldResetAsm2) <-> next(satGFAsm2[0]=1)) & 
+    (((satGFAsm2[1]=1 | chg[1]) & !shouldResetAsm2) <-> next(satGFAsm2[1]=1))
+    
+  );
+
+asm
+  GF !open1;
+asm
+  GF !open2;
+
+//FG !giveUp;  
+gar
+  GF giveUp;
+  
+define
+  close1 := q * closeVal >= 1 * p;
+  close2 := q * closeVal >= 2 * p;
+
+define // threshold is p/q
+  p := 3;
+  q := 2;

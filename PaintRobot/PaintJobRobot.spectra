@@ -1,0 +1,27 @@
+module PaintJobRobot
+// Robot with arms that color pieces. Change of color has to 
+// be supported (dimensions of arrays are number of robot arms).
+
+out Int(0..255)[2] color; // colors of robot
+in boolean[2] chg; // flag: change of color is allowed
+
+define // different colorings
+  c1 := color[0] < 128 & color[1] < 128;
+  c2 := color[0] < 128 & color[1] >= 128;
+  c3 := color[0] >= 128 & color[1] < 128;
+  c4 := color[0] >= 128 & color[1] >= 128;
+
+// change support does not appear at same time
+asm G !(chg[0] & chg[1]);
+// no change support implies same color
+gar G !chg[0] -> next(color[0])=color[0];
+gar G !chg[1] -> next(color[1])=color[1];  
+
+// always eventually support change
+asm GF chg[0];
+asm GF chg[1];
+// always eventually produce coloring
+gar GF c1;
+gar GF c2;
+gar GF c3;
+gar GF c4;
